@@ -1,38 +1,39 @@
-const nodemailer = require('nodemailer');
+const Brevo = require('@getbrevo/brevo');
 
-const transporter = nodemailer.createTransport({
-  host: 'smtp-relay.brevo.com',
-  port: 587,
-  secure: false,
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-  tls: {
-    rejectUnauthorized: false,
-  },
-});
+const client = Brevo.ApiClient.instance;
+client.authentications['api-key'].apiKey = process.env.BREVO_API_KEY;
 
-transporter.verify((error) => {
-  if (error) {
-    console.error('Email transporter failed:', error.message);
-  } else {
-    console.log('Email transporter ready:', process.env.EMAIL_USER);
-  }
-});
+const apiInstance = new Brevo.TransactionalEmailsApi();
 
 const sendEmail = async ({ to, subject, html }) => {
   try {
-    await transporter.sendMail({
-      from: '"SafarWise" <' + process.env.EMAIL_USER + '>',
-      to,
-      subject,
-      html,
-    });
-    console.log('Email sent to:', to);
+    if (!to || !subject || !html) {
+      throw new Error("Missing required email fields");
+    }
+
+    const email = new Brevo.SendSmtpEmail();
+
+    email.subject = subject;
+    email.htmlContent = html;
+
+    email.sender = {
+      name: 'SafarWise',
+      email: process.env.EMAIL_FROM, // must be verified in Brevo
+    };
+
+    email.to = [{ email: to }];
+
+    const response = await apiInstance.sendTransacEmail(email);
+
+    console.log('✅ Email sent:', response.messageId);
+    return true;
+
   } catch (error) {
-    console.error('Email send failed:', error.message);
-    throw error;
+    console.error(
+      '❌ Email failed:',
+      error.response?.body || error.message
+    );
+    return false;
   }
 };
 
