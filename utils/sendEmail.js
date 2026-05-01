@@ -33,7 +33,7 @@ const sendEmail = async ({ to, subject, html }) => {
       '❌ Email failed:',
       error.response?.body || error.message
     );
-    return false;
+    throw error;
   }
 };
 
