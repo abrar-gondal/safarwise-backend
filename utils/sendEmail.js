@@ -1,41 +1,22 @@
-const Brevo = require('@getbrevo/brevo');
-
-const apiInstance = new Brevo.TransactionalEmailsApi();
-
-// Correct auth
-apiInstance.authentications = {
-  apiKey: {
-    apiKey: process.env.BREVO_API_KEY,
-  },
-};
+const nodemailer = require('nodemailer');
 
 const sendEmail = async ({ to, subject, html }) => {
-  try {
-    if (!to || !subject || !html) {
-      throw new Error("Missing required email fields");
-    }
+  const transporter = nodemailer.createTransport({
+    host: 'smtp.gmail.com',
+    port: 587,
+    secure: false,
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASS,
+    },
+  });
 
-    const email = new Brevo.SendSmtpEmail();
-
-    email.subject = subject;
-    email.htmlContent = html;
-
-    email.sender = {
-      name: 'SafarWise',
-      email: process.env.EMAIL_FROM,
-    };
-
-    email.to = [{ email: to }];
-
-    const response = await apiInstance.sendTransacEmail(email);
-
-    console.log('✅ Email sent:', response.messageId);
-    return true;
-
-  } catch (error) {
-    console.error('❌ Email failed:', error.response?.body || error.message);
-    throw error;
-  }
+  await transporter.sendMail({
+    from: `"SafarWise" <${process.env.EMAIL_USER}>`,
+    to,
+    subject,
+    html,
+  });
 };
 
 module.exports = sendEmail;
